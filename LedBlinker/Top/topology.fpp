@@ -22,20 +22,20 @@ module LedBlinker {
     # ----------------------------------------------------------------------
 
     instance $health
-    instance blockDrv
+    instance rgDriver
     instance tlmSend
     instance cmdDisp
     instance cmdSeq
     instance comm
     instance downlink
     instance eventLogger
-    instance fatalAdapter
+    #instance fatalAdapter
     instance fatalHandler
     instance fileDownlink
     instance fileManager
     instance fileUplink
     instance fileUplinkBufferManager
-    instance linuxTime
+    instance timeHandler
     instance prmDb
     instance rateGroup1
     instance rateGroup2
@@ -62,7 +62,7 @@ module LedBlinker {
 
     text event connections instance textLogger
 
-    time connections instance linuxTime
+    time connections instance timeHandler
 
     health connections instance $health
 
@@ -89,14 +89,16 @@ module LedBlinker {
     }
 
     connections RateGroups {
-      # Block driver
-      blockDrv.CycleOut -> rateGroupDriver.CycleIn
+      # Rate group drivers
+      rgDriver.CycleOut -> rateGroupDriver.CycleIn
 
       # Rate group 1
       rateGroupDriver.CycleOut[Ports_RateGroups.rateGroup1] -> rateGroup1.CycleIn
-      rateGroup1.RateGroupMemberOut[0] -> tlmSend.Run
-      rateGroup1.RateGroupMemberOut[1] -> fileDownlink.Run
-      rateGroup1.RateGroupMemberOut[2] -> systemResources.run
+      rateGroup1.RateGroupMemberOut[0] -> comm.schedIn
+      rateGroup1.RateGroupMemberOut[2] -> tlmSend.Run
+      rateGroup1.RateGroupMemberOut[3] -> fileDownlink.Run
+      rateGroup1.RateGroupMemberOut[4] -> systemResources.run
+
 
       # Rate group 2
       rateGroupDriver.CycleOut[Ports_RateGroups.rateGroup2] -> rateGroup2.CycleIn
@@ -105,8 +107,7 @@ module LedBlinker {
       # Rate group 3
       rateGroupDriver.CycleOut[Ports_RateGroups.rateGroup3] -> rateGroup3.CycleIn
       rateGroup3.RateGroupMemberOut[0] -> $health.Run
-      rateGroup3.RateGroupMemberOut[1] -> blockDrv.Sched
-      rateGroup3.RateGroupMemberOut[2] -> fileUplinkBufferManager.schedIn
+      rateGroup3.RateGroupMemberOut[1] -> fileUplinkBufferManager.schedIn
     }
 
     connections Sequencer {
@@ -132,7 +133,7 @@ module LedBlinker {
     # Named connection group
     connections LedConnections {
       # Rate Group 1 (1Hz cycle) ouput is connected to led's run input
-      rateGroup1.RateGroupMemberOut[3] -> led.run
+      rateGroup1.RateGroupMemberOut[1] -> led.run
       # led's gpioSet output is connected to gpioDriver's gpioWrite input
       led.gpioSet -> gpioDriver.gpioWrite
     }

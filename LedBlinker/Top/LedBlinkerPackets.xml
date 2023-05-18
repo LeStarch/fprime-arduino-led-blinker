@@ -37,9 +37,9 @@
         <channel name="fileManager.Errors"/>
     </packet>
 
-    <packet name="DriveTlm" id="3" level="1">
-        <channel name="blockDrv.BD_Cycles"/>
-    </packet>
+    <!--packet name="DriveTlm" id="3" level="1">
+        <channel name="rgDriver.BD_Cycles"/>
+    </packet-->
 
     <packet name="SystemRes1" id="5" level="2">
         <channel name="systemResources.MEMORY_TOTAL"/>

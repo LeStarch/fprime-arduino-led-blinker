@@ -6,6 +6,7 @@
 // Provides access to autocoded functions
 #include <LedBlinker/Top/LedBlinkerTopologyAc.hpp>
 #include <LedBlinker/Top/LedBlinkerPacketsAc.hpp>
+#include <LedBlinker/Top/LedBlinkerTopology.hpp>
 
 // Necessary project-specified types
 #include <Fw/Types/MallocAllocator.hpp>
@@ -41,21 +42,19 @@ NATIVE_INT_TYPE rateGroup3Context[Svc::ActiveRateGroup::CONNECTION_COUNT_MAX] = 
 
 // A number of constants are needed for construction of the topology. These are specified here.
 enum TopologyConstants {
-    CMD_SEQ_BUFFER_SIZE = 5 * 1024,
+    CMD_SEQ_BUFFER_SIZE = 1024,
     FILE_DOWNLINK_TIMEOUT = 1000,
     FILE_DOWNLINK_COOLDOWN = 1000,
     FILE_DOWNLINK_CYCLE_TIME = 1000,
     FILE_DOWNLINK_FILE_QUEUE_DEPTH = 10,
     HEALTH_WATCHDOG_CODE = 0x123,
-    COMM_PRIORITY = 100,
-    UPLINK_BUFFER_MANAGER_STORE_SIZE = 3000,
-    UPLINK_BUFFER_MANAGER_QUEUE_SIZE = 30,
+    UPLINK_BUFFER_MANAGER_STORE_SIZE = 1024,
+    UPLINK_BUFFER_MANAGER_QUEUE_SIZE = 5,
     UPLINK_BUFFER_MANAGER_ID = 200
 };
 
 // Ping entries are autocoded, however; this code is not properly exported. Thus, it is copied here.
 Svc::Health::PingEntry pingEntries[] = {
-    {PingEntries::blockDrv::WARN, PingEntries::blockDrv::FATAL, "blockDrv"},
     {PingEntries::tlmSend::WARN, PingEntries::tlmSend::FATAL, "chanTlm"},
     {PingEntries::cmdDisp::WARN, PingEntries::cmdDisp::FATAL, "cmdDisp"},
     {PingEntries::cmdSeq::WARN, PingEntries::cmdSeq::FATAL, "cmdSeq"},
@@ -95,7 +94,6 @@ void configureTopology() {
     // Parameter database is configured with a database file name, and that file must be initially read.
     prmDb.configure("PrmDb.dat");
     prmDb.readParamFile();
-
     // Health is supplied a set of ping entires.
     health.setPingEntries(pingEntries, FW_NUM_ARRAY_ELEMENTS(pingEntries), HEALTH_WATCHDOG_CODE);
 
@@ -110,10 +108,6 @@ void configureTopology() {
     downlink.setup(framing);
     uplink.setup(deframing);
 
-    bool gpio_success = gpioDriver.open(13, Drv::LinuxGpioDriver::GpioDirection::GPIO_OUT);
-    if (!gpio_success) {
-        printf("[ERROR] Failed to open GPIO pin\n");
-    }
     // Note: Uncomment when using Svc:TlmPacketizer
     //tlmSend.setPacketList(LedBlinkerPacketsPkts, LedBlinkerPacketsIgnore, 1);
 }
@@ -132,42 +126,11 @@ void setupTopology(const TopologyState& state) {
     // Project-specific component configuration. Function provided above. May be inlined, if desired.
     configureTopology();
     // Autocoded parameter loading. Function provided by autocoder.
-    // loadParameters();
-    // Autocoded task kick-off (active components). Function provided by autocoder.
+    loadParameters();
+    // Initiialize communications
+    initializeSpecifics(state);
+    // Autocoded
     startTasks(state);
-    // Initialize socket client communication if and only if there is a valid specification
-    if (state.hostname != nullptr && state.port != 0) {
-        Os::TaskString name("ReceiveTask");
-        // Uplink is configured for receive so a socket task is started
-        comm.configure(state.hostname, state.port);
-        comm.startSocketTask(name, true, COMM_PRIORITY, Default::STACK_SIZE);
-    }
-}
-
-// Variables used for cycle simulation
-Os::Mutex cycleLock;
-volatile bool cycleFlag = true;
-
-void startSimulatedCycle(U32 milliseconds) {
-    cycleLock.lock();
-    bool cycling = cycleFlag;
-    cycleLock.unLock();
-
-    // Main loop
-    while (cycling) {
-        LedBlinker::blockDrv.callIsr();
-        Os::Task::delay(milliseconds);
-
-        cycleLock.lock();
-        cycling = cycleFlag;
-        cycleLock.unLock();
-    }
-}
-
-void stopSimulatedCycle() {
-    cycleLock.lock();
-    cycleFlag = false;
-    cycleLock.unLock();
 }
 
 void teardownTopology(const TopologyState& state) {
@@ -175,9 +138,7 @@ void teardownTopology(const TopologyState& state) {
     stopTasks(state);
     freeThreads(state);
 
-    // Other task clean-up.
-    comm.stopSocketTask();
-    (void)comm.joinSocketTask(nullptr);
+    stopSpecifics(state);
 
     // Resource deallocation
     cmdSeq.deallocateBuffer(mallocator);

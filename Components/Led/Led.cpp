@@ -18,7 +18,7 @@ namespace Components {
     Led(
         const char *const compName
     ) : LedComponentBase(compName),
-    state(Fw::On::OFF),
+    state(Fw::On::ON),
     transitions(0),
     count(0),
     blinking(false)

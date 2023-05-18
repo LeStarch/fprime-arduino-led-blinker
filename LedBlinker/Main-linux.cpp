@@ -5,6 +5,8 @@
 // ======================================================================
 // Used to access topology functions
 #include <LedBlinker/Top/LedBlinkerTopology.hpp>
+#include <LedBlinker/Top/LedBlinkerTopology-linux.hpp>
+
 // Used for signal handling shutdown
 #include <signal.h>
 // Used for command line argument processing

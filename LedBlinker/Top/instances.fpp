@@ -13,11 +13,6 @@ module LedBlinker {
   # Active component instances
   # ----------------------------------------------------------------------
 
-  instance blockDrv: Drv.BlockDriver base id 0x0100 \
-    queue size Default.QUEUE_SIZE \
-    stack size Default.STACK_SIZE \
-    priority 140
-
   instance rateGroup1: Svc.ActiveRateGroup base id 0x0200 \
     queue size Default.QUEUE_SIZE \
     stack size Default.STACK_SIZE \
@@ -93,23 +88,13 @@ module LedBlinker {
   # Passive component instances
   # ----------------------------------------------------------------------
 
-  @ Communications driver. May be swapped with other comm drivers like UART
-  @ Note: Here we have TCP reliable uplink and UDP (low latency) downlink
-  instance comm: Drv.ByteStreamDriverModel base id 0x4000 \
-    type "Drv::TcpClient" \ # type specified to select implementor of ByteStreamDriverModel
-    at "../../Drv/TcpClient/TcpClient.hpp" # location of above implementor must also be specified
-
   instance downlink: Svc.Framer base id 0x4100
 
-  instance fatalAdapter: Svc.AssertFatalAdapter base id 0x4200
+  #instance fatalAdapter: Svc.AssertFatalAdapter base id 0x4200
 
   instance fatalHandler: Svc.FatalHandler base id 0x4300
 
   instance fileUplinkBufferManager: Svc.BufferManager base id 0x4400
-
-  instance linuxTime: Svc.Time base id 0x4500 \
-    type "Svc::LinuxTime" \
-    at "../../Svc/LinuxTime/LinuxTime.hpp"
 
   instance rateGroupDriver: Svc.RateGroupDriver base id 0x4600
 
@@ -122,7 +107,4 @@ module LedBlinker {
   instance systemResources: Svc.SystemResources base id 0x4A00
 
   instance led: Components.Led base id 0x4B00
-
-  instance gpioDriver: Drv.LinuxGpioDriver base id 0x4C00
-
 }

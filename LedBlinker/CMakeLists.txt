@@ -25,9 +25,18 @@ include("${FPRIME_FRAMEWORK_PATH}/cmake/FPrime-Code.cmake")
 # Components and Topology
 ###
 add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/Top/")
-
-set(SOURCE_FILES "${CMAKE_CURRENT_LIST_DIR}/Main.cpp")
 set(MOD_DEPS ${PROJECT_NAME}/Top)
+
+if (CMAKE_SYSTEM_NAME STREQUAL ArduinoFw)
+    set(SOURCE_FILES "${CMAKE_CURRENT_LIST_DIR}/Main-arduino.cpp")
+    list(APPEND MOD_DEPS Os_Baremetal_TaskRunner)
+else()
+    set(SOURCE_FILES "${CMAKE_CURRENT_LIST_DIR}/Main-linux.cpp")
+endif()
+
 
 register_fprime_deployment()
 include("${CMAKE_CURRENT_LIST_DIR}/../project.cmake")
+if (CMAKE_SYSTEM_NAME STREQUAL ArduinoFw)
+    finalize_arduino_executable(LedBlinker)
+endif()
